@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <PackageId>EzyBoardViewer</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Loshop-Studio</Authors>
+    <Company>Loshop-Studio</Company>
+    <Description>.NET port of EzyBoardViewer: parse Suibian (随身答) board zips and cloud notes, export SVG / PDF, render video.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Loshop-Studio/EzyBoardViewer-DotNet</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Loshop-Studio/EzyBoardViewer-DotNet</PackageProjectUrl>
+    <PackageTags>ezyboard;suibian;note;svg;pdf;whiteboard</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PdfSharp" Version="6.1.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

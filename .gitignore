@@ -1,0 +1,14 @@
+## .NET
+bin/
+obj/
+*.user
+.vs/
+
+## NuGet
+*.nupkg
+
+## 字体等大资源（按需单独放置，不进仓库）
+public/fonts/
+*.ttf
+*.ttc
+*.otf
