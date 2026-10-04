@@ -57,13 +57,13 @@ Element : StrokeElement | ImageElement | TextElement | GeometryElement   // 嵌�
 
 ## 依赖与要求
 
-| 能力 | 说明 |
-|---|---|
-| SVG | 纯算法生成，无额外依赖 |
-| PDF | PdfSharp 矢量重绘；中文需提供 CJK 字体 `.ttf`（如 HarmonyOS Sans SC） |
-| 视频 | SkiaSharp 逐帧渲染 + 外部 **FFmpeg** 编码（PATH 或 `C:\ffmpeg\bin\ffmpeg.exe`） |
-| zip | 内置最小 zip reader（stored / deflate-raw，不支持 zip64） |
-| mdb | 内置 LMDB + FlatBuffers 解析，不依赖额外包 |
+| 能力 | 说明                                                                                   |
+| ---- | -------------------------------------------------------------------------------------- |
+| SVG  | 纯算法生成，无额外依赖                                                                 |
+| PDF  | PdfSharp 矢量重绘；中文需提供 CJK 字体`.ttf`（如 HarmonyOS Sans SC）                 |
+| 视频 | SkiaSharp 逐帧渲染 + 外部**FFmpeg** 编码（PATH 或 `C:\ffmpeg\bin\ffmpeg.exe`） |
+| zip  | 内置最小 zip reader（stored / deflate-raw，不支持 zip64）                              |
+| mdb  | 内置 LMDB + FlatBuffers 解析，不依赖额外包                                             |
 
 ## 许可
 

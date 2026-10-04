@@ -131,7 +131,7 @@ namespace EzyBoardViewer.Core
             double size = ParseD(r.GetAttribute("font-size"), 40);
             var (hex, a) = ReadColor(r);
             var brush = new XSolidBrush(ParseColor(hex, a));
-            var font = new XFont("Helvetica", size);
+            var font = ResolveFont(fontPath, size);
             if (r.IsEmptyElement) return;
             var inner = r.ReadInnerXml();
             using var sr = XmlReader.Create(new StringReader(inner), new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null });
@@ -144,6 +144,41 @@ namespace EzyBoardViewer.Core
                     g.DrawString(text, font, brush, x, Flip(pageH, y));
                 }
             }
+        }
+
+        /// <summary>
+        /// 解析字体：fontPath 指向 CJK 字体 .ttf/.otf 时按 Unicode 子集嵌入（只嵌入实际用到的字符，PDF 体积可控）；
+        /// 未提供 → 退到系统 Arial/Equivalents（仅支持拉丁文，中文会缺字）；都找不到则抛清晰错误。
+        /// </summary>
+        private static readonly string[] SystemFallbackFonts = {
+            @"C:\Windows\Fonts\arial.ttf",
+            @"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            @"/System/Library/Fonts/Supplemental/Arial.ttf",
+            @"/Library/Fonts/Arial.ttf"
+        };
+
+        private static XFont ResolveFont(string fontPath, double size)
+        {
+            string resolvedFontPath = null;
+            if (!string.IsNullOrEmpty(fontPath))
+            {
+                if (!File.Exists(fontPath)) throw new FileNotFoundException($"未找到字体文件：{fontPath}");
+                resolvedFontPath = fontPath;
+            }
+            else
+            {
+                foreach (var p in SystemFallbackFonts)
+                    if (File.Exists(p)) { resolvedFontPath = p; break; }
+            }
+            if (resolvedFontPath == null)
+                throw new InvalidOperationException("未提供 fontPath 且系统也未找到任何可用字体。如需中文，请传 .ttf 路径（例如 HarmonyOS Sans SC）。");
+
+            // XFontSource.CreateFromFile 内部按 path 缓存；XGlyphTypeface + XFont(this, ...) 走文件加载 + 子集嵌入的最直接路径
+            var fontSource = XFontSource.CreateFromFile(resolvedFontPath);
+            var glyphTypeface = new XGlyphTypeface(fontSource);
+            return new XFont(glyphTypeface, size,
+                new XPdfFontOptions(PdfFontEncoding.Unicode, PdfFontEmbedding.TryComputeSubset),
+                null);
         }
 
         private static (string Hex, double Alpha) ReadColor(XmlReader r)

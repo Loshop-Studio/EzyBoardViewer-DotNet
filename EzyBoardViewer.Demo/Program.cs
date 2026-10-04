@@ -4,9 +4,17 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using EzyBoardViewer;
 using EzyBoardViewer.Core;
 using EzyBoardViewer.Models;
+
+/// <summary>空 IBoardSource，用于直接构造 Page 进行 PDF 导出测试。</summary>
+class EmptySource : EzyBoardViewer.Core.IBoardSource
+{
+    public IReadOnlyList<string> Names => new List<string>();
+    public Task<byte[]> ReadAsync(string name) => Task.FromResult<byte[]>(null);
+}
 
 static class Pb
 {
@@ -90,5 +98,35 @@ static class Program
         pkg.ExportToPdfAsync(0, pdfPath).GetAwaiter().GetResult();
         Console.WriteLine($"---- PDF ----");
         Console.WriteLine($"PDF 已写出: {pdfPath}  ({new FileInfo(pdfPath).Length} bytes)");
+
+        // === 直接测试 CJK 字体嵌入：手写 Page 含笔迹 + 一段中英文，传入 HarmonyOS Sans SC，对比有/无字体的 PDF 体积 ===
+        var fontPath = @"C:\Windows\Fonts\HarmonyOS_Sans_SC_Regular.ttf";
+        var cjkPage = new Page
+        {
+            Width = 600, Height = 300,
+            Background = "#fafafa",
+            Elements = new List<Element>
+            {
+                new StrokeElement {
+                    Points = new List<(float X, float Y)> { (20, 30), (180, 270), (380, 60), (560, 220) },
+                    Color = "#222222", Opacity = 1, StrokeWidth = 4
+                },
+                new TextElement {
+                    Text = "你好世界 Hello EzyBoardViewer — 中文嵌入测试 (PingFang/微软雅黑/Noto/汉字都用同一字体嵌入)",
+                    Color = "#222222", Opacity = 1, FontSize = 22,
+                    Rect = new[] { 20f, 100f, 580f, 180f }
+                }
+            }
+        };
+        var noFontPdf = Path.Combine(Path.GetTempPath(), "ezy_nofont.pdf");
+        var cjkPdf = Path.Combine(Path.GetTempPath(), "ezy_cjk.pdf");
+        PdfExporter.ExportPagesAsync(new[] { cjkPage }, new EmptySource(), File.Create(noFontPdf), null).GetAwaiter().GetResult();
+        PdfExporter.ExportPagesAsync(new[] { cjkPage }, new EmptySource(), File.Create(cjkPdf), fontPath).GetAwaiter().GetResult();
+        var noInfo = new FileInfo(noFontPdf);
+        var cjkInfo = new FileInfo(cjkPdf);
+        Console.WriteLine($"---- CJK 字体嵌入对比 ----");
+        Console.WriteLine($"  无字体: {noFontPdf} ({noInfo.Length} bytes)");
+        Console.WriteLine($"  有字体: {cjkPdf} ({cjkInfo.Length} bytes)");
+        Console.WriteLine($"  差值:   {cjkInfo.Length - noInfo.Length} bytes (Unicode 子集嵌入)");
     }
 }
