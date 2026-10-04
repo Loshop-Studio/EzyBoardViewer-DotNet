@@ -22,7 +22,7 @@ Console.WriteLine($"录制：{pkg.IsRecord}，V2：{pkg.IsV2}，页数：{pkg.Pa
 
 string svg = await pkg.ExportToSvgAsync(0);                 // 取第 1 页 SVG 字符串
 await pkg.ExportToSvgAsync(0, "page1.svg");                 // 或直接写文件
-await pkg.ExportToPdfAsync(0, "page1.pdf", fontPath: null); // 矢量 PDF（可选 CJK 字体）
+await pkg.ExportToPdfAsync(0, "page1.pdf", fontPath: "HarmonyOS_Sans_SC_Regular.ttf"); // PDF 中的文字按 Unicode 子集嵌入字体
 pkg.RenderVideo("out.mp4", VideoQuality.Mid);               // 渲染视频（需本机 FFmpeg）
 ```
 
@@ -60,7 +60,7 @@ Element : StrokeElement | ImageElement | TextElement | GeometryElement   // 嵌�
 | 能力 | 说明                                                                                   |
 | ---- | -------------------------------------------------------------------------------------- |
 | SVG  | 纯算法生成，无额外依赖                                                                 |
-| PDF  | PdfSharp 矢量重绘；中文需提供 CJK 字体`.ttf`（如 HarmonyOS Sans SC）                 |
+| PDF  | PdfSharp 矢量重绘 + **CJK 字体按 Unicode 子集嵌入**（仅打包实际用到的字形）。传 `fontPath` 指向 `.ttf`（如 HarmonyOS Sans SC）；不传时退到系统 Arial，**中文会缺字** |
 | 视频 | SkiaSharp 逐帧渲染 + 外部**FFmpeg** 编码（PATH 或 `C:\ffmpeg\bin\ffmpeg.exe`） |
 | zip  | 内置最小 zip reader（stored / deflate-raw，不支持 zip64）                              |
 | mdb  | 内置 LMDB + FlatBuffers 解析，不依赖额外包                                             |
