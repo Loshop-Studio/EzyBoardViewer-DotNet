@@ -13,6 +13,7 @@ namespace EzyBoardViewer.Core
     ///   - 旧笔记：每页 header.bin/snapshot.bin + 每段的 *_touch.bin + 共享 res/image/*
     ///   - 新笔记（V2）：不上传 *_touch.bin，笔触在 page_mdb/data.mdb（LMDB+ObjectBox）里，
     ///     按 snapshot 引用的 touch 文件名现场合成 TouchSource 返回。
+    /// 背景（底色 / 背景线）来源：新版从 page_mdb/data.mdb 读，老格式回退到 header.bin protobuf。
     /// 对齐 EzyBoardViewer-Vue/src/utils/noteVfs.ts 的 createNoteVfs。
     /// </summary>
     public sealed class NoteVfsSource : IBoardSource
@@ -66,22 +67,48 @@ namespace EzyBoardViewer.Core
             }
         }
 
+        /// <summary>
+        /// 该页画布背景配置（底色 + 背景线）。
+        /// - 新版笔记：mdbUrl 不为空，背景存在 page_mdb/data.mdb（HeaderEntity + BackgroundLineConfigEntity）。
+        /// - 老格式笔记：无 mdb，背景存在 header.bin（protobuf 字段 11 / 13）。
+        /// mdb 优先；缺失或解析失败时回退到 header.bin。同 URL 只下载解析一次。
+        /// </summary>
         private Task<MdbCfg> MdbConfig(NotePageDescriptor p)
         {
-            if (string.IsNullOrEmpty(p.mdbUrl)) return Task.FromResult(new MdbCfg());
+            string mdbUrl = p?.mdbUrl;
+            string headerUrl = p?.headerUrl;
+            if (string.IsNullOrEmpty(mdbUrl) && string.IsNullOrEmpty(headerUrl)) return Task.FromResult(new MdbCfg());
+            string key = !string.IsNullOrEmpty(mdbUrl) ? mdbUrl : headerUrl;
             lock (_mdbCfg)
             {
-                if (_mdbCfg.TryGetValue(p.mdbUrl, out var t)) return t;
+                if (_mdbCfg.TryGetValue(key, out var t)) return t;
                 t = Task.Run(async () =>
                 {
-                    try
+                    // 1. 新版：mdb（最权威，命中就以它为准）
+                    if (!string.IsNullOrEmpty(mdbUrl))
                     {
-                        var u8 = await _http.GetByteArrayAsync(p.mdbUrl);
-                        return new MdbCfg { bg = MdbReader.ReadHeaderBgColor(u8), bgLines = MdbReader.ReadBgLineConfig(u8) };
+                        try
+                        {
+                            var u8 = await _http.GetByteArrayAsync(mdbUrl);
+                            var cfg = new MdbCfg { bg = MdbReader.ReadHeaderBgColor(u8), bgLines = MdbReader.ReadBgLineConfig(u8) };
+                            if (cfg.bg != null || cfg.bgLines != null) return cfg;
+                        }
+                        catch { /* mdb 拉取或解析失败，继续回退到 header.bin */ }
                     }
-                    catch { return new MdbCfg(); }
+                    // 2. 老格式：protobuf header.bin（老 Android 端无 mdb，背景就在这里）
+                    if (!string.IsNullOrEmpty(headerUrl))
+                    {
+                        try
+                        {
+                            var u8 = await _http.GetByteArrayAsync(headerUrl);
+                            var r = PbHeaderReader.ReadHeaderBlobBg(u8);
+                            return new MdbCfg { bg = r.bgColor, bgLines = r.bgLines };
+                        }
+                        catch { /* ignore */ }
+                    }
+                    return new MdbCfg();
                 });
-                _mdbCfg[p.mdbUrl] = t;
+                _mdbCfg[key] = t;
                 return t;
             }
         }

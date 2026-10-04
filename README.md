@@ -33,7 +33,14 @@ var note = await BoardViewer.OpenNoteAsync(new NoteDescriptor
 {
     pages = new List<NotePageDescriptor>
     {
-        new() { pageKey = 1, snapshotUrl = "https://.../snapshot.bin", mdbUrl = "https://.../data.mdb", width = 1080, height = 1920 }
+        new()
+        {
+            pageKey = 1,
+            snapshotUrl = "https://.../snapshot.bin",
+            mdbUrl = "https://.../data.mdb",     // 新版笔记笔触存这里
+            headerUrl = "https://.../header.bin", // 老格式笔记背景在这里（可与 mdbUrl 同存，以 mdb 为准）
+            width = 1080, height = 1920
+        }
     },
     images = new List<NoteImageDescriptor>()
 });
@@ -42,8 +49,15 @@ Console.WriteLine(note.PagesCount);
 await note.ExportToPdfAsync("note.pdf");
 ```
 
-> 云笔记的「分享链接 → 每页 snapshot/mdb/图片 元数据」由调用方从业务云 API 取得后填入 `NoteDescriptor`；
+> 云笔记的「分享链接 → 每页 snapshot/mdb/header/图片 元数据」由调用方从业务云 API 取得后填入 `NoteDescriptor`；
 > 库内负责**按需拉取**并合成 `header.bin`、以及从 `data.mdb` 现场合成 `TouchSource`。
+
+**底色与背景网格不需要手动传**：`NoteVfsSource` 会按页自动读背景——
+
+- 新版笔记：优先从该页 `data.mdb`（`HeaderEntity.defaultBackgroundColor` + `BackgroundLineConfigEntity`）。
+- 老格式笔记（无 mdb）：回退到该页 `header.bin` 的 protobuf 字段 11/13（`PbHeaderReader.ReadHeaderBlobBg` 解码）。
+
+这是云笔记 App 端背景的唯一权威来源，不做任何截图采样 / 图像推断。
 
 ### 3. 数据模型
 

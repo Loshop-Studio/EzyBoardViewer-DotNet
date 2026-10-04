@@ -23,6 +23,9 @@ namespace EzyBoardViewer.Models
         public string snapshotUrl;          // 该页 snapshot.bin 的 URL
         public string[] touchUrls;          // 旧笔记：每段笔触一个独立文件
         public string mdbUrl;               // 新笔记：page_mdb/data.mdb 的 URL
+        // 老格式笔记（无 mdb）：底色与背景线的唯一来源。新版可省——背景从 mdb 读。
+        // 与 mdbUrl 同存时以 mdb 为准；mdb 缺失 / 解析失败时回退到它（protobuf 字段 11/13）。
+        public string headerUrl;
         public int width = 1080;
         public int height = 1920;
         public int bgcolor = -1;            // -1 = 不透明白
